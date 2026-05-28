@@ -4,7 +4,117 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Pre-Approval Dashboard</title>
-  <link rel="stylesheet" href="./styles.css?v=8">
+  <style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
+
+:root {
+  font-family: 'IBM Plex Sans', sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  color: #102036;
+  background:
+    radial-gradient(circle at top left, rgba(255, 218, 150, 0.7), transparent 28%),
+    linear-gradient(180deg, #f7f0e1 0%, #eef4f2 45%, #edf0fb 100%);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 320px; min-height: 100vh; }
+button, input, select { font: inherit; }
+.dashboard-page { min-height: 100vh; background: #f5f5f4; color: #1c1917; }
+.header { background: #ffffff; border-bottom: 1px solid #e7e5e4; padding: 0 32px; display: flex; align-items: center; justify-content: space-between; min-height: 56px; position: sticky; top: 0; z-index: 50; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05); }
+.filters-bar { padding: 16px 0; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.filter-label { font-size: 12px; font-weight: 600; color: #57534e; }
+.filter-select { height: 34px; border: 1px solid #d6d3d1; border-radius: 6px; background: white; color: #1c1917; padding: 0 10px; }
+.header-left, .header-right { display: flex; align-items: center; gap: 12px; }
+.logo-mark { width: 28px; height: 28px; border-radius: 7px; background: #dc2626; color: white; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; }
+.header-title { font-size: 15px; font-weight: 600; }
+.header-sub, .updated-text { font-size: 12px; color: #a8a29e; }
+.status-pill { display: flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; background: #f5f5f4; border: 1px solid #e7e5e4; font-size: 12px; color: #78716c; }
+.eyebrow { text-transform: uppercase; letter-spacing: 0.12em; font-size: 0.75rem; color: #dc2626; font-weight: 700; }
+h1, h2, h3, p { margin-top: 0; }
+h1 { font-family: 'Fraunces', Georgia, serif; font-size: clamp(2.1rem, 4vw, 4rem); line-height: 0.98; letter-spacing: -0.04em; margin-bottom: 12px; }
+.main { padding: 24px 32px 40px; }
+.hero-banner { display: flex; justify-content: space-between; gap: 18px; align-items: stretch; padding: 28px; border-radius: 20px; background: radial-gradient(circle at top right, rgba(220, 38, 38, 0.12), transparent 30%), linear-gradient(135deg, #fff7ed 0%, #ffffff 42%, #f8fafc 100%); border: 1px solid #e7e5e4; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04); margin-bottom: 16px; }
+.hero-copy { max-width: 760px; color: #57534e; }
+.hero-side { display: flex; flex-direction: column; align-items: flex-end; gap: 12px; }
+.hero-chip { padding: 6px 10px; border-radius: 999px; border: 1px solid #fecaca; background: #fef2f2; color: #b91c1c; font-size: 12px; font-weight: 600; }
+.hero-stat { padding: 14px 16px; min-width: 190px; border-radius: 16px; background: #111827; color: #f9fafb; }
+.hero-stat-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: #9ca3af; }
+.hero-stat-value { font-size: 1.3rem; font-weight: 700; }
+.metric-card, .card { background: #ffffff; border: 1px solid #e7e5e4; border-radius: 14px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04); }
+.notice { margin-bottom: 16px; padding: 12px 14px; border-radius: 10px; font-size: 13px; }
+.notice.info { background: #f0f9ff; color: #0369a1; border: 1px solid #bae6fd; }
+.notice.error { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+.btn { padding: 6px 14px; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer; border: 1px solid #d6d3d1; background: #ffffff; color: #1c1917; }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-primary { background: #dc2626; color: white; border-color: #dc2626; }
+.dot { width: 7px; height: 7px; border-radius: 50%; background: #a8a29e; }
+.dot.live { background: #16a34a; }
+.dot.loading { background: #d97706; }
+.dot.error { background: #dc2626; }
+.metrics-row { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 16px; margin-bottom: 16px; }
+.metric-card { padding: 18px; }
+.metric-icon { width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-bottom: 12px; font-size: 18px; }
+.metric-value { font-size: 34px; font-weight: 700; line-height: 1; margin-bottom: 6px; }
+.metric-label { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+.metric-desc { font-size: 12px; color: #78716c; }
+.c-red.metric-icon, .c-red.metric-value { color: #dc2626; background: #fef2f2; }
+.c-blue.metric-icon, .c-blue.metric-value { color: #0ea5e9; background: #f0f9ff; }
+.c-green.metric-icon, .c-green.metric-value { color: #16a34a; background: #f0fdf4; }
+.c-purple.metric-icon, .c-purple.metric-value { color: #7c3aed; background: #f5f3ff; }
+.c-amber.metric-icon, .c-amber.metric-value { color: #d97706; background: #fffbeb; }
+.content-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-bottom: 16px; }
+.card-header { padding: 16px 16px 12px; border-bottom: 1px solid #f5f5f4; }
+.card-title { font-size: 14px; font-weight: 600; }
+.card-sub { font-size: 12px; color: #78716c; }
+.card-body { padding: 16px; }
+.mini-title { font-size: 12px; font-weight: 600; margin-bottom: 10px; }
+.pie-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.pie-card { display: flex; align-items: center; gap: 18px; }
+.pie-svg { width: 160px; height: 160px; flex: 0 0 auto; }
+.pie-slice { cursor: pointer; stroke: #ffffff; stroke-width: 2; transition: transform 120ms ease, opacity 120ms ease; transform-origin: 80px 80px; }
+.pie-slice:hover { opacity: 0.92; transform: scale(1.02); }
+.pie-slice.good { fill: #16a34a; }
+.pie-slice.bad { fill: #dc2626; }
+.pie-center-value { font-size: 22px; font-weight: 700; fill: #111827; }
+.pie-center-label { font-size: 11px; fill: #6b7280; }
+.pie-legend { display: grid; gap: 8px; font-size: 13px; }
+.legend-btn { border: 1px solid #e5e7eb; background: #ffffff; border-radius: 10px; padding: 8px 10px; text-align: left; cursor: pointer; }
+.legend-btn.good { color: #166534; background: #f0fdf4; }
+.legend-btn.bad { color: #991b1b; background: #fef2f2; }
+.pie-detail { padding-top: 6px; color: #6b7280; font-size: 12px; }
+.split-summary { display: flex; gap: 24px; margin-bottom: 14px; }
+.split-summary div { display: flex; flex-direction: column; gap: 2px; }
+.split-summary strong { font-size: 1.4rem; line-height: 1; }
+.split-summary span { font-size: 12px; color: #78716c; }
+.mapping-list { display: grid; gap: 12px; }
+.mapping-item { padding: 14px; border-radius: 12px; background: #fafaf9; border: 1px solid #e7e5e4; color: #57534e; }
+.mapping-item strong { display: block; color: #1c1917; margin-bottom: 8px; }
+.table-card { margin-bottom: 16px; }
+.deal-table td, .deal-table th { white-space: nowrap; }
+.table-search { width: 240px; }
+table { width: 100%; border-collapse: collapse; background: white; border-radius: 14px; overflow: hidden; }
+th, td { text-align: left; padding: 12px 14px; border-bottom: 1px solid #f1f5f9; vertical-align: top; }
+th { background: #fafaf9; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; color: #57534e; }
+.empty-state { color: #78716c; font-style: italic; }
+code { background: #f5f5f4; padding: 1px 5px; border-radius: 6px; }
+.table-wrap { overflow-x: auto; }
+.pagination { padding: 14px 16px; display: flex; justify-content: space-between; gap: 12px; align-items: center; font-size: 12px; color: #78716c; }
+.page-btns { display: flex; align-items: center; gap: 8px; }
+.page-chip { padding: 0 8px; }
+@media (max-width: 1040px) { .metrics-row, .content-grid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 780px) {
+  .header, .header-right, .hero-banner { flex-direction: column; align-items: flex-start; }
+  .main, .header { padding-left: 16px; padding-right: 16px; }
+  .metrics-row, .content-grid { grid-template-columns: 1fr; }
+  .pie-grid { grid-template-columns: 1fr; }
+  .pie-card { flex-direction: column; align-items: flex-start; }
+  .hero-side { width: 100%; align-items: flex-start; }
+}
+  </style>
 </head>
 <body>
   <div class="dashboard-page">
@@ -117,6 +227,163 @@
     </main>
   </div>
 
-  <script src="./script.js?v=8"></script>
+  <script>
+const statusMessage = document.getElementById("statusMessage");
+const refreshButton = document.getElementById("refreshButton");
+const statusDot = document.getElementById("statusDot");
+const statusLabel = document.getElementById("statusLabel");
+const updatedText = document.getElementById("updatedText");
+const startDateFilter = document.getElementById("startDateFilter");
+const endDateFilter = document.getElementById("endDateFilter");
+const approvalTypeFilter = document.getElementById("approvalTypeFilter");
+const paymentModeFilter = document.getElementById("paymentModeFilter");
+const versionFilter = document.getElementById("versionFilter");
+const statusFilter = document.getElementById("statusFilter");
+const tableSearch = document.getElementById("tableSearch");
+const summaryCardsEl = document.getElementById("summaryCards");
+const financeVersionTableEl = document.getElementById("financeVersionTable");
+const contactCohortBreakdownEl = document.getElementById("contactCohortBreakdown");
+const dealCohortBreakdownEl = document.getElementById("dealCohortBreakdown");
+const detailTableEl = document.getElementById("detailTable");
+const mappingListEl = document.getElementById("mappingList");
+const API_BASE = window.location.protocol === "file:" ? "http://localhost:4173" : "";
+const PAGE_SIZE = 10;
+let lastRows = [];
+let currentPage = 1;
+refreshButton.addEventListener("click", () => loadDashboard(true));
+[startDateFilter, endDateFilter, approvalTypeFilter, paymentModeFilter, versionFilter, statusFilter].forEach((element) => {
+  element.addEventListener("change", () => { currentPage = 1; loadDashboard(false); });
+});
+tableSearch.addEventListener("input", () => { currentPage = 1; renderDetailTable(lastRows); });
+void loadDashboard(false);
+async function loadDashboard(forceRefresh) {
+  statusMessage.className = "notice info";
+  statusMessage.textContent = "Refreshing live data from HubSpot...";
+  statusDot.className = "dot loading";
+  statusLabel.textContent = "Refreshing live data…";
+  refreshButton.disabled = true;
+  try {
+    const params = new URLSearchParams();
+    if (forceRefresh) params.set("refresh", "1");
+    if (startDateFilter.value) params.set("startDate", startDateFilter.value);
+    if (endDateFilter.value) params.set("endDate", endDateFilter.value);
+    if (approvalTypeFilter.value !== "all") params.set("approvalType", approvalTypeFilter.value);
+    if (paymentModeFilter.value !== "all") params.set("paymentMode", paymentModeFilter.value);
+    if (versionFilter.value !== "all") params.set("version", versionFilter.value);
+    if (statusFilter.value !== "all") params.set("status", statusFilter.value);
+    const response = await fetch(`${API_BASE}/api/dashboard?${params.toString()}`, { cache: "no-store", headers: { "Cache-Control": "no-cache" } });
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload.error || "Failed to load dashboard");
+    renderMappings(payload.mapping);
+    syncFilter(approvalTypeFilter, payload.filters.options.approvalTypes, "All Types", payload.filters.applied.approvalType);
+    syncFilter(paymentModeFilter, payload.filters.options.paymentModes, "All Payment Modes", payload.filters.applied.paymentMode);
+    syncFilter(versionFilter, payload.filters.options.versions, "All Versions", payload.filters.applied.version);
+    syncFilter(statusFilter, payload.filters.options.statuses, "All Statuses", payload.filters.applied.status);
+    startDateFilter.value = payload.filters.applied.startDate || "";
+    endDateFilter.value = payload.filters.applied.endDate || "";
+    renderSummary(payload.summaryCards);
+    renderComparisonTable(financeVersionTableEl, payload.versionStatusRows);
+    renderVersionPieCard(contactCohortBreakdownEl, payload.breakdowns.cohortByVersion.find((row) => row.version === "Quick"));
+    renderVersionPieCard(dealCohortBreakdownEl, payload.breakdowns.cohortByVersion.find((row) => row.version === "Normal"));
+    lastRows = payload.customerRows;
+    renderDetailTable(lastRows);
+    statusMessage.textContent = `Anchored on pre approval start date. Last refreshed: ${formatDateTime(payload.generatedAt)}. Contacts ${payload.meta.contactCount}, deals ${payload.meta.dealCount}.`;
+    statusDot.className = "dot live";
+    statusLabel.textContent = "Live from HubSpot";
+    updatedText.textContent = `Updated ${formatDateTime(payload.generatedAt)}`;
+  } catch (error) {
+    console.error(error);
+    statusMessage.className = "notice error";
+    statusMessage.textContent = error.message;
+    statusDot.className = "dot error";
+    statusLabel.textContent = "Error loading data";
+    updatedText.textContent = "Updated -";
+  } finally { refreshButton.disabled = false; }
+}
+function syncFilter(select, options, allLabel, selected) {
+  const current = new Set(["all", ...options]);
+  select.innerHTML = [`<option value="all">${allLabel}</option>`].concat(options.map((option) => `<option value="${option}">${option}</option>`)).join("");
+  select.value = current.has(selected) ? selected : "all";
+}
+function renderMappings(mapping) {
+  mappingListEl.innerHTML = "";
+  const sections = [{ title: "Contact properties", rows: mapping.contact }, { title: "Deal properties", rows: mapping.deal }];
+  sections.forEach((section) => {
+    const card = document.createElement("div");
+    card.className = "mapping-item";
+    card.innerHTML = `<strong>${section.title}</strong>${section.rows.map((row) => `<div><code>${row.key}</code>: ${row.value}</div>`).join("")}`;
+    mappingListEl.appendChild(card);
+  });
+}
+function renderSummary(cards) {
+  const overallUsers = cards.find((card) => card.label === "Overall Pre-Approval Users")?.value || 0;
+  summaryCardsEl.innerHTML = "";
+  cards.forEach((card) => {
+    let desc = card.description || "";
+    if (overallUsers && card.label === "Overall Bookings") desc = `${desc} (${formatPercent(card.value, overallUsers)})`;
+    if (overallUsers && (card.label === "Quick Users" || card.label === "Normal Users")) desc = `${desc} (${formatPercent(card.value, overallUsers)} of users)`;
+    const article = document.createElement("article");
+    article.className = `metric-card ${card.tone || "c-blue"}`;
+    article.innerHTML = `<div class="metric-icon ${card.tone || "c-blue"}">${card.icon || "•"}</div><div class="metric-value ${card.tone || "c-blue"}">${card.value}</div><div class="metric-label">${card.label}</div><div class="metric-desc">${desc}</div>`;
+    summaryCardsEl.appendChild(article);
+  });
+}
+function renderComparisonTable(container, rows) {
+  const bodyRows = rows.length ? rows.map((row) => {
+    const preApprovedLabel = `${row.preApproved} (${formatPercent(row.preApproved, row.total)})`;
+    const rejectedLabel = `${row.rejected} (${formatPercent(row.rejected, row.total)})`;
+    const bookingLabel = `${row.bookings} (${formatPercent(row.bookings, row.total)})`;
+    return `<tr><td>${row.version}</td><td>${row.total}</td><td>${preApprovedLabel}</td><td>${rejectedLabel}</td><td>${bookingLabel}</td></tr>`;
+  }).join("") : '<tr><td colspan="5" class="empty-state">No rows found.</td></tr>';
+  container.innerHTML = `<table><thead><tr><th>Version</th><th>Total</th><th>Pre Approved</th><th>Rejected</th><th>Bookings</th></tr></thead><tbody>${bodyRows}</tbody></table>`;
+}
+function renderVersionPieCard(container, row) {
+  const title = row?.version || "Unknown";
+  const good = row?.good || 0;
+  const bad = row?.bad || 0;
+  const total = row?.total || 0;
+  const goodPercent = total ? Math.round((good / total) * 100) : 0;
+  const badPercent = total ? 100 - goodPercent : 0;
+  const radius = 70, cx = 80, cy = 80;
+  const goodAngle = total ? (good / total) * Math.PI * 2 : 0;
+  const goodPath = describeSlice(cx, cy, radius, -Math.PI / 2, -Math.PI / 2 + goodAngle);
+  const badPath = describeSlice(cx, cy, radius, -Math.PI / 2 + goodAngle, -Math.PI / 2 + Math.PI * 2);
+  container.innerHTML = `<div class="mini-title">${title}</div><div class="pie-card"><svg class="pie-svg" viewBox="0 0 160 160" aria-label="${title} cohort pie chart">${good > 0 ? `<path class="pie-slice good" data-label="Good" data-count="${good}" data-percent="${goodPercent}" d="${goodPath}"></path>` : ""}${bad > 0 ? `<path class="pie-slice bad" data-label="Bad" data-count="${bad}" data-percent="${badPercent}" d="${badPath}"></path>` : ""}<circle cx="${cx}" cy="${cy}" r="36" fill="white"></circle><text x="${cx}" y="${cy - 2}" text-anchor="middle" class="pie-center-value">${total}</text><text x="${cx}" y="${cy + 16}" text-anchor="middle" class="pie-center-label">Total</text></svg><div class="pie-legend"><button type="button" class="legend-btn good" data-label="Good" data-count="${good}" data-percent="${goodPercent}">Good: <strong>${good}</strong></button><button type="button" class="legend-btn bad" data-label="Bad" data-count="${bad}" data-percent="${badPercent}">Bad: <strong>${bad}</strong></button><div class="pie-detail">Click a slice</div></div></div>`;
+  const detail = container.querySelector(".pie-detail");
+  container.querySelectorAll(".pie-slice, .legend-btn").forEach((element) => {
+    element.addEventListener("click", () => {
+      const label = element.getAttribute("data-label");
+      const count = element.getAttribute("data-count");
+      const percent = element.getAttribute("data-percent");
+      detail.textContent = `${label}: ${count} users (${percent}%)`;
+    });
+  });
+}
+function polarToCartesian(cx, cy, radius, angle) { return { x: cx + radius * Math.cos(angle), y: cy + radius * Math.sin(angle) }; }
+function describeSlice(cx, cy, radius, startAngle, endAngle) {
+  const start = polarToCartesian(cx, cy, radius, startAngle);
+  const end = polarToCartesian(cx, cy, radius, endAngle);
+  const largeArcFlag = endAngle - startAngle > Math.PI ? 1 : 0;
+  return [`M ${cx} ${cy}`, `L ${start.x} ${start.y}`, `A ${radius} ${radius} 0 ${largeArcFlag} 1 ${end.x} ${end.y}`, "Z"].join(" ");
+}
+function renderDetailTable(rows) {
+  const columns = ["customerKey","preApprovalStartDate","approvalTypes","overallStatus","overallVersion","contactFinanceCohort","dealUserCohort","financeFirstVersion","financeFirstDealCount","financeFirstBookingConfirmedCount","carFirstVersion","carFirstDealCount","carFirstBookingConfirmedCount","paymentModes"];
+  const query = tableSearch.value.trim().toLowerCase();
+  const filteredRows = !query ? rows : rows.filter((row) => [row.customerKey,row.preApprovalStartDate,...(row.approvalTypes || []),row.overallStatus,row.overallVersion,row.contactFinanceCohort,row.dealUserCohort,...(row.paymentModes || [])].join(" ").toLowerCase().includes(query));
+  const pageCount = Math.max(1, Math.ceil(filteredRows.length / PAGE_SIZE));
+  currentPage = Math.min(currentPage, pageCount);
+  const pageRows = filteredRows.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+  detailTableEl.innerHTML = `<div class="table-wrap"><table class="deal-table"><thead><tr>${columns.map((column) => `<th>${escapeHtml(headerLabel(column))}</th>`).join("")}</tr></thead><tbody>${pageRows.length ? pageRows.map((row) => `<tr>${columns.map((column) => `<td>${escapeHtml(formatCell(row[column]))}</td>`).join("")}</tr>`).join("") : `<tr><td colspan="${columns.length}" class="empty-state">No rows match the current filters.</td></tr>`}</tbody></table></div><div class="pagination"><div>Showing ${filteredRows.length ? (currentPage - 1) * PAGE_SIZE + 1 : 0}-${Math.min(currentPage * PAGE_SIZE, filteredRows.length)} of ${filteredRows.length}</div><div class="page-btns"><button type="button" class="btn" ${currentPage === 1 ? "disabled" : ""} data-page="prev">Prev</button><span class="page-chip">Page ${currentPage} / ${pageCount}</span><button type="button" class="btn" ${currentPage === pageCount ? "disabled" : ""} data-page="next">Next</button></div></div>`;
+  detailTableEl.querySelectorAll("[data-page]").forEach((button) => { button.addEventListener("click", () => { currentPage += button.dataset.page === "prev" ? -1 : 1; renderDetailTable(lastRows); }); });
+}
+function headerLabel(key) {
+  const labels = { customerKey: "Customer", preApprovalStartDate: "Pre-Approval Start", approvalTypes: "Type", overallStatus: "Pre-Approval Status", overallVersion: "Version", contactFinanceCohort: "Contact Cohort", dealUserCohort: "Deal Cohort", financeFirstVersion: "Finance Version", financeFirstDealCount: "Finance Deals", financeFirstBookingConfirmedCount: "Finance Bookings", carFirstVersion: "Car Version", carFirstDealCount: "Car Deals", carFirstBookingConfirmedCount: "Car Bookings", paymentModes: "Payment Mode" };
+  return labels[key] || key;
+}
+function formatCell(value) { return Array.isArray(value) ? value.join(", ") : String(value ?? ""); }
+function formatDateTime(value) { return new Date(value).toLocaleString(); }
+function formatPercent(value, total) { return !total ? "0%" : `${Math.round((value / total) * 100)}%`; }
+function escapeHtml(value) { return value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;"); }
+  </script>
 </body>
 </html>
