@@ -214,6 +214,17 @@ code { background: #f5f5f4; padding: 1px 5px; border-radius: 6px; }
         <div id="detailTable"></div>
       </section>
 
+      <section class="card table-card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Order Booking View</div>
+            <div class="card-sub">Booked orders with version, cohort, payment mode, booking date, and cancel flag</div>
+          </div>
+          <input id="orderSearch" class="filter-select table-search" type="search" placeholder="Search order / customer / version">
+        </div>
+        <div id="orderTable"></div>
+      </section>
+
     </main>
   </div>
 
@@ -230,20 +241,25 @@ const paymentModeFilter = document.getElementById("paymentModeFilter");
 const versionFilter = document.getElementById("versionFilter");
 const statusFilter = document.getElementById("statusFilter");
 const tableSearch = document.getElementById("tableSearch");
+const orderSearch = document.getElementById("orderSearch");
 const summaryCardsEl = document.getElementById("summaryCards");
 const financeVersionTableEl = document.getElementById("financeVersionTable");
 const contactCohortBreakdownEl = document.getElementById("contactCohortBreakdown");
 const dealCohortBreakdownEl = document.getElementById("dealCohortBreakdown");
 const detailTableEl = document.getElementById("detailTable");
+const orderTableEl = document.getElementById("orderTable");
 const API_BASE = window.location.protocol === "file:" ? "http://localhost:4173" : "";
 const PAGE_SIZE = 10;
 let lastRows = [];
+let lastOrderRows = [];
 let currentPage = 1;
+let currentOrderPage = 1;
 refreshButton.addEventListener("click", () => loadDashboard(true));
 [startDateFilter, endDateFilter, approvalTypeFilter, paymentModeFilter, versionFilter, statusFilter].forEach((element) => {
-  element.addEventListener("change", () => { currentPage = 1; loadDashboard(false); });
+  element.addEventListener("change", () => { currentPage = 1; currentOrderPage = 1; loadDashboard(false); });
 });
 tableSearch.addEventListener("input", () => { currentPage = 1; renderDetailTable(lastRows); });
+orderSearch.addEventListener("input", () => { currentOrderPage = 1; renderOrderTable(lastOrderRows); });
 void loadDashboard(false);
 async function loadDashboard(forceRefresh) {
   statusMessage.className = "notice info";
@@ -274,7 +290,9 @@ async function loadDashboard(forceRefresh) {
     renderVersionPieCard(contactCohortBreakdownEl, payload.breakdowns.cohortByVersion.find((row) => row.version === "Quick"));
     renderVersionPieCard(dealCohortBreakdownEl, payload.breakdowns.cohortByVersion.find((row) => row.version === "Normal"));
     lastRows = payload.customerRows;
+    lastOrderRows = payload.orderRows || [];
     renderDetailTable(lastRows);
+    renderOrderTable(lastOrderRows);
     statusMessage.textContent = `Anchored on pre approval start date. Last refreshed: ${formatDateTime(payload.generatedAt)}. Contacts ${payload.meta.contactCount}, deals ${payload.meta.dealCount}.`;
     statusDot.className = "dot live";
     statusLabel.textContent = "Live from HubSpot";
@@ -299,8 +317,11 @@ function renderSummary(cards) {
   cards.forEach((card) => {
     let desc = card.description || "";
     if (overallUsers && card.label === "Overall Bookings") desc = `${desc} (${formatPercent(card.value, overallUsers)})`;
+    if (overallUsers && card.label === "Cancelled Bookings") desc = `${desc} (${formatPercent(card.value, overallUsers)})`;
     if (overallUsers && (card.label === "Quick Users" || card.label === "Normal Users")) desc = `${desc} (${formatPercent(card.value, overallUsers)} of users)`;
-    const valueSuffix = overallUsers && card.label === "Overall Bookings" ? ` <span class="metric-value-meta">${formatPercent(card.value, overallUsers)}</span>` : "";
+    const valueSuffix = overallUsers && (card.label === "Overall Bookings" || card.label === "Cancelled Bookings")
+      ? ` <span class="metric-value-meta">${formatPercent(card.value, overallUsers)}</span>`
+      : "";
     const article = document.createElement("article");
     article.className = `metric-card ${card.tone || "c-blue"}`;
     article.innerHTML = `<div class="metric-icon ${card.tone || "c-blue"}">${card.icon || "•"}</div><div class="metric-value ${card.tone || "c-blue"}">${card.value}${valueSuffix}</div><div class="metric-label">${card.label}</div><div class="metric-desc">${desc}</div>`;
@@ -312,9 +333,10 @@ function renderComparisonTable(container, rows) {
     const preApprovedLabel = `${row.preApproved} (${formatPercent(row.preApproved, row.total)})`;
     const rejectedLabel = `${row.rejected} (${formatPercent(row.rejected, row.total)})`;
     const bookingLabel = `${row.bookings} (${formatPercent(row.bookings, row.total)})`;
-    return `<tr><td>${row.version}</td><td>${row.total}</td><td>${preApprovedLabel}</td><td>${rejectedLabel}</td><td>${bookingLabel}</td></tr>`;
-  }).join("") : '<tr><td colspan="5" class="empty-state">No rows found.</td></tr>';
-  container.innerHTML = `<table><thead><tr><th>Version</th><th>Total</th><th>Pre Approved</th><th>Rejected</th><th>Bookings</th></tr></thead><tbody>${bodyRows}</tbody></table>`;
+    const cancelledLabel = `${row.cancelledBookings} (${formatPercent(row.cancelledBookings, row.total)})`;
+    return `<tr><td>${row.version}</td><td>${row.total}</td><td>${preApprovedLabel}</td><td>${rejectedLabel}</td><td>${bookingLabel}</td><td>${cancelledLabel}</td></tr>`;
+  }).join("") : '<tr><td colspan="6" class="empty-state">No rows found.</td></tr>';
+  container.innerHTML = `<table><thead><tr><th>Version</th><th>Total</th><th>Pre Approved</th><th>Rejected</th><th>Bookings</th><th>Cancelled Bookings</th></tr></thead><tbody>${bodyRows}</tbody></table>`;
 }
 function renderVersionPieCard(container, row) {
   const title = row?.version || "Unknown";
@@ -355,8 +377,22 @@ function renderDetailTable(rows) {
   detailTableEl.innerHTML = `<div class="table-wrap"><table class="deal-table"><thead><tr>${columns.map((column) => `<th>${escapeHtml(headerLabel(column))}</th>`).join("")}</tr></thead><tbody>${pageRows.length ? pageRows.map((row) => `<tr>${columns.map((column) => `<td>${escapeHtml(formatCell(row[column]))}</td>`).join("")}</tr>`).join("") : `<tr><td colspan="${columns.length}" class="empty-state">No rows match the current filters.</td></tr>`}</tbody></table></div><div class="pagination"><div>Showing ${filteredRows.length ? (currentPage - 1) * PAGE_SIZE + 1 : 0}-${Math.min(currentPage * PAGE_SIZE, filteredRows.length)} of ${filteredRows.length}</div><div class="page-btns"><button type="button" class="btn" ${currentPage === 1 ? "disabled" : ""} data-page="prev">Prev</button><span class="page-chip">Page ${currentPage} / ${pageCount}</span><button type="button" class="btn" ${currentPage === pageCount ? "disabled" : ""} data-page="next">Next</button></div></div>`;
   detailTableEl.querySelectorAll("[data-page]").forEach((button) => { button.addEventListener("click", () => { currentPage += button.dataset.page === "prev" ? -1 : 1; renderDetailTable(lastRows); }); });
 }
+function renderOrderTable(rows) {
+  const columns = ["orderId","customerKey","approvalType","version","cohort","paymentMode","bookingDate","cancelled","cancelledReturnDate"];
+  const query = orderSearch.value.trim().toLowerCase();
+  const filteredRows = !query ? rows : rows.filter((row) => [row.orderId,row.customerKey,row.approvalType,row.version,row.cohort,row.paymentMode,row.bookingDate,row.cancelled,row.cancelledReturnDate].join(" ").toLowerCase().includes(query));
+  const pageCount = Math.max(1, Math.ceil(filteredRows.length / PAGE_SIZE));
+  currentOrderPage = Math.min(currentOrderPage, pageCount);
+  const pageRows = filteredRows.slice((currentOrderPage - 1) * PAGE_SIZE, currentOrderPage * PAGE_SIZE);
+  orderTableEl.innerHTML = `<div class="table-wrap"><table class="deal-table"><thead><tr>${columns.map((column) => `<th>${escapeHtml(orderHeaderLabel(column))}</th>`).join("")}</tr></thead><tbody>${pageRows.length ? pageRows.map((row) => `<tr>${columns.map((column) => `<td>${escapeHtml(formatCell(row[column]))}</td>`).join("")}</tr>`).join("") : `<tr><td colspan="${columns.length}" class="empty-state">No booked orders match the current filters.</td></tr>`}</tbody></table></div><div class="pagination"><div>Showing ${filteredRows.length ? (currentOrderPage - 1) * PAGE_SIZE + 1 : 0}-${Math.min(currentOrderPage * PAGE_SIZE, filteredRows.length)} of ${filteredRows.length}</div><div class="page-btns"><button type="button" class="btn" ${currentOrderPage === 1 ? "disabled" : ""} data-order-page="prev">Prev</button><span class="page-chip">Page ${currentOrderPage} / ${pageCount}</span><button type="button" class="btn" ${currentOrderPage === pageCount ? "disabled" : ""} data-order-page="next">Next</button></div></div>`;
+  orderTableEl.querySelectorAll("[data-order-page]").forEach((button) => { button.addEventListener("click", () => { currentOrderPage += button.dataset.orderPage === "prev" ? -1 : 1; renderOrderTable(lastOrderRows); }); });
+}
 function headerLabel(key) {
   const labels = { customerKey: "Customer", preApprovalStartDate: "Pre-Approval Start", approvalTypes: "Type", overallStatus: "Pre-Approval Status", overallVersion: "Version", contactFinanceCohort: "Contact Cohort", dealUserCohort: "Deal Cohort", financeFirstVersion: "Finance Version", financeFirstDealCount: "Finance Deals", financeFirstBookingConfirmedCount: "Finance Bookings", carFirstVersion: "Car Version", carFirstDealCount: "Car Deals", carFirstBookingConfirmedCount: "Car Bookings", paymentModes: "Payment Mode" };
+  return labels[key] || key;
+}
+function orderHeaderLabel(key) {
+  const labels = { orderId: "Order ID", customerKey: "Customer", approvalType: "Type", version: "Version", cohort: "Cohort", paymentMode: "Payment Mode", bookingDate: "Booking Date", cancelled: "Cancelled", cancelledReturnDate: "Cancel / Return Date" };
   return labels[key] || key;
 }
 function formatCell(value) { return Array.isArray(value) ? value.join(", ") : String(value ?? ""); }
