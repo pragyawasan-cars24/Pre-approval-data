@@ -162,6 +162,19 @@ function normalizeValue(value) {
   return String(value ?? "").trim();
 }
 
+function normalizeEmail(value) {
+  return normalizeValue(value).toLowerCase();
+}
+
+function isExcludedEmail(email) {
+  const normalized = normalizeEmail(email);
+  if (!normalized) return false;
+  return normalized === "test@test.com"
+    || normalized.endsWith("@yopmail.com")
+    || normalized.includes("@cars24")
+    || normalized.endsWith("@c24auto.com");
+}
+
 function normalizeType(value) {
   const normalized = normalizeValue(value).toUpperCase();
   if (normalized.includes("FINANCE")) {
@@ -281,7 +294,7 @@ function versionStatusSummary(rows, version) {
 }
 
 function customerKey(contact) {
-  return normalizeValue(contact.email).toLowerCase() || normalizeValue(contact.phone).replace(/\D/g, "") || contact.id;
+  return normalizeEmail(contact.email) || normalizeValue(contact.phone).replace(/\D/g, "") || contact.id;
 }
 
 function toDateValue(value) {
@@ -323,7 +336,7 @@ async function buildDashboard(filters = { approvalType: "all", paymentMode: "all
   const contacts = rawContacts
     .map((row) => ({
       id: String(row.id),
-      email: normalizeValue(row.properties[PROPERTY_MAP.contact.email]),
+      email: normalizeEmail(row.properties[PROPERTY_MAP.contact.email]),
       phone: normalizeValue(row.properties[PROPERTY_MAP.contact.phone]),
       preApprovalType: normalizeType(row.properties[PROPERTY_MAP.contact.preApprovalType]),
       preApprovalVersion: normalizeValue(row.properties[PROPERTY_MAP.contact.preApprovalVersion]) || "Unknown",
@@ -333,6 +346,7 @@ async function buildDashboard(filters = { approvalType: "all", paymentMode: "all
       financeStatus: normalizeStatus(row.properties[PROPERTY_MAP.contact.financeStatus]),
       userFinanceCohort: normalizeCohort(row.properties[PROPERTY_MAP.contact.userFinanceCohort])
     }))
+    .filter((row) => !isExcludedEmail(row.email))
     .filter((row) => row.preApprovalType === "Finance First" || row.preApprovalType === "Car First");
 
   const associationMap = await readContactToDealAssociations(contacts.map((contact) => contact.id));
