@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pre-Approval Dashboard</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="dashboard-page">
+    <header class="header">
+      <div class="header-left">
+        <div class="logo-mark">C24</div>
+        <div>
+          <div class="header-title">Pre-Approval Dashboard</div>
+          <div class="header-sub">Finance First and Car First from live HubSpot data</div>
+        </div>
+      </div>
+      <div class="header-right">
+        <div class="status-pill">
+          <div id="statusDot" class="dot loading"></div>
+          <span id="statusLabel">Refreshing live data…</span>
+        </div>
+        <span id="updatedText" class="updated-text">Updated -</span>
+        <button id="refreshButton" class="btn btn-primary">Refresh</button>
+      </div>
+    </header>
+
+    <main class="main">
+      <section class="filters-bar">
+        <span class="filter-label">Filters</span>
+        <input id="startDateFilter" class="filter-select" type="date">
+        <input id="endDateFilter" class="filter-select" type="date">
+        <select id="approvalTypeFilter" class="filter-select">
+          <option value="all">All Types</option>
+        </select>
+        <select id="paymentModeFilter" class="filter-select">
+          <option value="all">All Payment Modes</option>
+        </select>
+        <select id="versionFilter" class="filter-select">
+          <option value="all">All Versions</option>
+        </select>
+        <select id="statusFilter" class="filter-select">
+          <option value="all">All Statuses</option>
+        </select>
+      </section>
+
+      <section class="hero-banner">
+        <div>
+          <p class="eyebrow">HubSpot Finance First + Car First</p>
+          <h1>Unique customer pre-approval view from May 18, 2026</h1>
+          <p class="hero-copy">
+            Pre approval start date is the anchor. Contact-level and deal-level signals are combined at unique customer level without double counting.
+          </p>
+        </div>
+        <div class="hero-side">
+          <div class="hero-chip">Live HubSpot</div>
+          <div class="hero-stat">
+            <div class="hero-stat-label">Date window</div>
+            <div class="hero-stat-value">May 18 onward</div>
+          </div>
+        </div>
+      </section>
+
+      <div id="statusMessage" class="notice info">Waiting for first refresh.</div>
+
+      <section class="metrics-row" id="summaryCards"></section>
+
+      <section class="content-grid">
+        <article class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Finance vs Car Comparison</div>
+              <div class="card-sub">Quick and Normal summary only</div>
+            </div>
+          </div>
+          <div class="card-body" id="financeVersionTable"></div>
+        </article>
+        <article class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Cohort Quality</div>
+              <div class="card-sub">Quick and Normal split into Good vs Bad. Click a slice to see count and %.</div>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="pie-grid">
+              <div id="contactCohortBreakdown"></div>
+              <div id="dealCohortBreakdown"></div>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <section class="card table-card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Customer Deal View</div>
+            <div class="card-sub">VTD-style compact table</div>
+          </div>
+          <input id="tableSearch" class="filter-select table-search" type="search" placeholder="Search customer / type / cohort">
+        </div>
+        <div id="detailTable"></div>
+      </section>
+
+      <section class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">HubSpot Property Mapping</div>
+            <div class="card-sub">Live fields used by this dashboard</div>
+          </div>
+        </div>
+        <div class="card-body">
+          <div id="mappingList" class="mapping-list"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="./script.js"></script>
+</body>
+</html>
