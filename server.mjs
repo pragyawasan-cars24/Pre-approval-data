@@ -9,7 +9,8 @@ const PORT = Number(process.env.PORT || 4173);
 const HUBSPOT_BASE_URL = "https://api.hubapi.com";
 const CACHE_TTL_MS = 5 * 60 * 1000;
 const BATCH_SIZE = 100;
-const MAX_PARALLEL = 6;
+const MAX_PARALLEL = 2;
+const HUBSPOT_MAX_RETRIES = 4;
 const DEFAULT_START_DATE = "2026-05-18";
 
 const PROPERTY_MAP = {
@@ -63,20 +64,36 @@ function readHubspotToken() {
 }
 
 async function hubspotFetch(pathname, init = {}) {
-  const response = await fetch(`${HUBSPOT_BASE_URL}${pathname}`, {
-    ...init,
-    headers: {
-      Authorization: `Bearer ${readHubspotToken()}`,
-      "Content-Type": "application/json",
-      ...(init.headers || {})
-    }
-  });
+  for (let attempt = 0; attempt <= HUBSPOT_MAX_RETRIES; attempt += 1) {
+    const response = await fetch(`${HUBSPOT_BASE_URL}${pathname}`, {
+      ...init,
+      headers: {
+        Authorization: `Bearer ${readHubspotToken()}`,
+        "Content-Type": "application/json",
+        ...(init.headers || {})
+      }
+    });
 
-  const json = await response.json().catch(() => ({}));
-  if (!response.ok) {
+    const json = await response.json().catch(() => ({}));
+    if (response.ok) {
+      return json;
+    }
+
+    if (response.status === 429 && attempt < HUBSPOT_MAX_RETRIES) {
+      const retryAfterSeconds = Number(response.headers.get("retry-after") || 0);
+      const retryDelayMs = retryAfterSeconds > 0
+        ? retryAfterSeconds * 1000
+        : 1000 * 2 ** attempt;
+      await sleep(retryDelayMs);
+      continue;
+    }
+
     throw new Error(`HubSpot API error ${response.status}: ${json.message || "Unknown error"}`);
   }
-  return json;
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 async function searchAllContacts() {
