@@ -294,15 +294,16 @@ function cohortByVersion(rows, version) {
   return { version, good, bad, total: good + bad };
 }
 
-function versionStatusSummary(rows, version) {
+function versionStatusSummary(rows, version, orderRows) {
   const subset = rows.filter((row) => row.overallVersion === version);
+  const versionOrderRows = orderRows.filter((row) => row.version === version);
   return {
     version,
     total: subset.length,
     preApproved: subset.filter((row) => row.overallStatus === "Pre Approved").length,
     rejected: subset.filter((row) => row.overallStatus === "Not Pre Approved").length,
-    bookings: subset.filter((row) => row.financeFirstBookingConfirmedCount > 0 || row.carFirstBookingConfirmedCount > 0).length,
-    cancelledBookings: subset.filter((row) => row.financeFirstCancelledBookingCount > 0 || row.carFirstCancelledBookingCount > 0).length
+    bookings: versionOrderRows.length,
+    cancelledBookings: versionOrderRows.filter((row) => row.cancelled === "Yes").length
   };
 }
 
@@ -490,34 +491,48 @@ async function buildDashboard(filters = { approvalType: "all", paymentMode: "all
 
   const financeRows = filteredRows.filter((row) => row.approvalTypes.includes("Finance First"));
   const carRows = filteredRows.filter((row) => row.approvalTypes.includes("Car First"));
-  const bookedRows = filteredRows.filter((row) => row.financeFirstBookingConfirmedCount > 0 || row.carFirstBookingConfirmedCount > 0);
-  const cancelledRows = filteredRows.filter((row) => row.financeFirstCancelledBookingCount > 0 || row.carFirstCancelledBookingCount > 0);
   const filteredCustomerKeys = new Set(filteredRows.map((row) => row.customerKey));
   const orderRows = [...customers.values()]
     .filter((customer) => filteredCustomerKeys.has(customer.customerKey))
     .flatMap((customer) => {
       const financeContacts = customer.contacts.filter((contact) => contact.preApprovalType === "Finance First");
+      const contactVersion = financeContacts.map((contact) => contact.preApprovalVersion).find((value) => value && value !== "Unknown")
+        || financeContacts[0]?.preApprovalVersion
+        || "Unknown";
+      const contactStatus = financeContacts.map((contact) => contact.financeStatus).find((value) => value && value !== "Unknown")
+        || financeContacts[0]?.financeStatus
+        || "Unknown";
       const contactCohort = financeContacts.map((contact) => contact.userFinanceCohort).find((value) => value && value !== "Unknown")
         || financeContacts[0]?.userFinanceCohort
         || "Unknown";
       return uniqueDeals(customer.deals)
         .filter((deal) => Boolean(deal.bookingConfirmDate))
+        .map((deal) => ({
+          deal,
+          version: deal.line === "Finance First"
+            ? contactVersion
+            : (deal.preApprovalVersion || "Unknown"),
+          status: deal.line === "Finance First"
+            ? contactStatus
+            : normalizeStatus(deal.preApprovalStatus),
+          cohort: deal.line === "Finance First"
+            ? contactCohort
+            : (deal.userCohort || "Unknown")
+        }))
         .filter((deal) => {
-          const typeOk = filters.approvalType === "all" || deal.line === filters.approvalType;
-          const paymentOk = filters.paymentMode === "all" || deal.paymentMode === filters.paymentMode;
-          const versionOk = filters.version === "all" || deal.preApprovalVersion === filters.version;
-          const statusOk = filters.status === "all" || normalizeStatus(deal.preApprovalStatus) === filters.status;
-          const dateOk = isWithinDateRange(customer.contacts.map((contact) => contact.preApprovalStartDate).find(Boolean) || deal.preApprovalStartDate || "", filters.startDate, filters.endDate);
+          const typeOk = filters.approvalType === "all" || deal.deal.line === filters.approvalType;
+          const paymentOk = filters.paymentMode === "all" || deal.deal.paymentMode === filters.paymentMode;
+          const versionOk = filters.version === "all" || deal.version === filters.version;
+          const statusOk = filters.status === "all" || deal.status === filters.status;
+          const dateOk = isWithinDateRange(customer.contacts.map((contact) => contact.preApprovalStartDate).find(Boolean) || deal.deal.preApprovalStartDate || "", filters.startDate, filters.endDate);
           return typeOk && paymentOk && versionOk && statusOk && dateOk;
         })
-        .map((deal) => ({
+        .map(({ deal, version, cohort }) => ({
           customerKey: customer.customerKey,
           orderId: deal.orderId || deal.id,
           approvalType: deal.line || "Unknown",
-          version: deal.preApprovalVersion || "Unknown",
-          cohort: deal.line === "Finance First"
-            ? contactCohort
-            : (deal.userCohort || "Unknown"),
+          version,
+          cohort,
           paymentMode: deal.paymentMode || "Unknown",
           bookingDate: deal.bookingConfirmDate || "",
           cancelled: deal.cancelledReturnDate ? "Yes" : "No",
@@ -525,18 +540,21 @@ async function buildDashboard(filters = { approvalType: "all", paymentMode: "all
         }));
     })
     .sort((left, right) => toDateValue(right.bookingDate) - toDateValue(left.bookingDate));
-  const overallBookingCustomers = bookedRows.length;
-  const overallCancelledBookingCustomers = cancelledRows.length;
+  const cancelledOrderRows = orderRows.filter((row) => row.cancelled === "Yes");
+  const overallBookingOrders = orderRows.length;
+  const overallCancelledBookingOrders = cancelledOrderRows.length;
+  const overallBookingCustomers = new Set(orderRows.map((row) => row.customerKey)).size;
+  const overallCancelledBookingCustomers = new Set(cancelledOrderRows.map((row) => row.customerKey)).size;
   const paymentModeOptions = [...new Set(customerRows.flatMap((row) => row.paymentModes))].sort();
   const versionOptions = [...new Set(customerRows.flatMap((row) => row.versions))].sort();
   const statusOptions = [...new Set(customerRows.map((row) => row.overallStatus))].filter(Boolean).sort();
   const overallQuickUsers = filteredRows.filter((row) => row.overallVersion === "Quick").length;
-  const overallQuickBookings = filteredRows.filter((row) => row.overallVersion === "Quick" && (row.financeFirstBookingConfirmedCount > 0 || row.carFirstBookingConfirmedCount > 0)).length;
+  const overallQuickBookings = orderRows.filter((row) => row.version === "Quick").length;
   const overallNormalUsers = filteredRows.filter((row) => row.overallVersion === "Normal").length;
-  const overallNormalBookings = filteredRows.filter((row) => row.overallVersion === "Normal" && (row.financeFirstBookingConfirmedCount > 0 || row.carFirstBookingConfirmedCount > 0)).length;
+  const overallNormalBookings = orderRows.filter((row) => row.version === "Normal").length;
   const cohortByType = [cohortSummary(filteredRows, "Finance First"), cohortSummary(filteredRows, "Car First")];
   const cohortByVersionRows = [cohortByVersion(filteredRows, "Quick"), cohortByVersion(filteredRows, "Normal")];
-  const versionStatusRows = [versionStatusSummary(filteredRows, "Quick"), versionStatusSummary(filteredRows, "Normal")];
+  const versionStatusRows = [versionStatusSummary(filteredRows, "Quick", orderRows), versionStatusSummary(filteredRows, "Normal", orderRows)];
 
   return {
     generatedAt: new Date().toISOString(),
@@ -568,31 +586,33 @@ async function buildDashboard(filters = { approvalType: "all", paymentMode: "all
       },
       {
         label: "Overall Bookings",
-        value: overallBookingCustomers,
+        value: overallBookingOrders,
+        rateValue: overallBookingCustomers,
         icon: "🎯",
         tone: "c-green",
-        description: "Unique customers with at least one booking-confirmed deal"
+        description: `${overallBookingCustomers} unique customers with booked orders`
       },
       {
         label: "Cancelled Bookings",
-        value: overallCancelledBookingCustomers,
+        value: overallCancelledBookingOrders,
+        rateValue: overallCancelledBookingCustomers,
         icon: "↩",
         tone: "c-purple",
-        description: "Unique customers with cancel / return date on at least one deal"
+        description: `${overallCancelledBookingCustomers} unique customers with cancelled / returned orders`
       },
       {
         label: "Quick Users",
         value: filteredRows.filter((row) => row.overallVersion === "Quick").length,
         icon: "🏦",
         tone: "c-red",
-        description: `${filteredRows.filter((row) => row.overallVersion === "Quick" && (row.financeFirstBookingConfirmedCount > 0 || row.carFirstBookingConfirmedCount > 0)).length} booked`
+        description: `${overallQuickBookings} booked orders`
       },
       {
         label: "Normal Users",
         value: filteredRows.filter((row) => row.overallVersion === "Normal").length,
         icon: "🚗",
         tone: "c-amber",
-        description: `${filteredRows.filter((row) => row.overallVersion === "Normal" && (row.financeFirstBookingConfirmedCount > 0 || row.carFirstBookingConfirmedCount > 0)).length} booked`
+        description: `${overallNormalBookings} booked orders`
       },
       {
         label: "Pre Approved Users",

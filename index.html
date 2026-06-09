@@ -316,11 +316,12 @@ function renderSummary(cards) {
   summaryCardsEl.innerHTML = "";
   cards.forEach((card) => {
     let desc = card.description || "";
-    if (overallUsers && card.label === "Overall Bookings") desc = `${desc} (${formatPercent(card.value, overallUsers)})`;
-    if (overallUsers && card.label === "Cancelled Bookings") desc = `${desc} (${formatPercent(card.value, overallUsers)})`;
+    const rateValue = Number.isFinite(Number(card.rateValue)) ? Number(card.rateValue) : card.value;
+    if (overallUsers && card.label === "Overall Bookings") desc = `${desc} (${formatPercent(rateValue, overallUsers)})`;
+    if (overallUsers && card.label === "Cancelled Bookings") desc = `${desc} (${formatPercent(rateValue, overallUsers)})`;
     if (overallUsers && (card.label === "Quick Users" || card.label === "Normal Users")) desc = `${desc} (${formatPercent(card.value, overallUsers)} of users)`;
     const valueSuffix = overallUsers && (card.label === "Overall Bookings" || card.label === "Cancelled Bookings")
-      ? ` <span class="metric-value-meta">${formatPercent(card.value, overallUsers)}</span>`
+      ? ` <span class="metric-value-meta">${formatPercent(rateValue, overallUsers)}</span>`
       : "";
     const article = document.createElement("article");
     article.className = `metric-card ${card.tone || "c-blue"}`;
